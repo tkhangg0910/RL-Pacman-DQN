@@ -1,0 +1,14 @@
+Lib/
+Include/
+Scripts/
+pyvenv.cfg
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Temporary files
+tempCodeRunnerFile.py
+*.log
+*.tmp
+*.bak

@@ -1,0 +1,5 @@
+gymnasium
+tensorflow
+matplotlib
+ale-py
+opencv-python
