@@ -12,3 +12,4 @@ tempCodeRunnerFile.py
 *.log
 *.tmp
 *.bak
+venv/

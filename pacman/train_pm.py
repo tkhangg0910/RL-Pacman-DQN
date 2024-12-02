@@ -4,6 +4,24 @@ import csv
 import argparse
 from agent_helper import Agent 
 import matplotlib.pyplot as plt
+import tensorflow as tf
+
+# GPU CONFIG
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        # Set a memory limit (e.g., 2GB out of 4GB available)
+        tf.config.set_logical_device_configuration(
+            gpus[0],
+            [tf.config.LogicalDeviceConfiguration(memory_limit=3072)]  
+        )
+        print("GPU memory limited to 3GB.")
+        # # Enable dynamic memory growth for each GPU
+        # for gpu in gpus:
+        #     tf.config.experimental.set_memory_growth(gpu, True)
+        # print("Dynamic memory growth enabled for GPUs.")
+    except RuntimeError as e:
+        print(e)
 
 # Adding arguments
 ap= argparse.ArgumentParser()
@@ -26,9 +44,9 @@ obs, info =env.reset()
 # Initialize param
 state_size = env.observation_space.shape
 action_size = env.action_space.n
-myAgent = Agent(state_size=state_size, action_size=action_size)
+myAgent = Agent(state_size=state_size, action_size=action_size, batch_size=128)
 total_time_step = 0
-log_file = f'pacman/training_logs/training_log_{myAgent.batch_size}_e{num_episodes}_s{num_steps}.csv'
+log_file = f'training_logs/training_log_{myAgent.batch_size}_e{num_episodes}_s{num_steps}.csv'
 
 myAgent.log_csv(log_file=log_file, ep="Episode", step="ep_step",rw="ep_rewards")
 
@@ -44,7 +62,7 @@ for ep in range(num_episodes):
         ep_step+=1
         # Update Target NN weight
         if total_time_step% myAgent.update_targetnn_rate == 0:
-            myAgent.target_nn.set_weights(myAgent.main_nn.get_weights())
+            myAgent.update_target_network()
         # Make decision
         action = myAgent.make_decison(obs)
         next_state, reward, terminal,_,_= env.step(action)
@@ -74,9 +92,11 @@ for ep in range(num_episodes):
         print(f"End episode: {ep} with episode's reward: {ep_rewards}")
 
 # Save Agent
-myAgent.main_nn.save(f"pacman/models/train_agent_{myAgent.batch_size}_e{num_episodes}_s{num_steps}.keras")
+myAgent.main_nn.save(f"models/train_agent_{myAgent.batch_size}_e{num_episodes}_s{num_steps}.keras")
 
 # preprocessed_obs = myAgent.preprocess(obs)
+# print(preprocessed_obs.shape)
+
 # plt.imshow(obs)
 # plt.imshow(preprocessed_obs, cmap='gray')  
 # plt.axis('off')  

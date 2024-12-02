@@ -1,6 +1,7 @@
-from keras.models import Sequential
-from keras.layers import Dense, Input, Flatten
-from keras.optimizers import Adam
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Input, Flatten, Conv2D, ReLU, MaxPool2D, BatchNormalization,GlobalAveragePooling2D
+from tensorflow.keras.optimizers import Adam
+import keras
 import numpy as np
 from collections import deque
 import random
@@ -32,26 +33,44 @@ class Agent:
         
     def preprocess(self, state):
         # Convert From RGB to GrayScale
-        gray_frame = cv2.cvtColor(state, cv2.COLOR_RGB2GRAY)
-        # Crope unecessary frame
-        cropped_frame = gray_frame[:173, :]
-        # Resize img
-        im = cv2.resize(cropped_frame, (106, 100), interpolation=cv2.INTER_AREA)  
-        return im
+        cropped_frame = state[:173, :]
+        gray_frame = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY)
+        im = cv2.resize(gray_frame, (120, 120), interpolation=cv2.INTER_AREA)
+        return im.reshape(120, 120, 1) / 255 
 
     def create_neuralnet(self):
-        # Create Neural Network with 6 layers
-        model = Sequential([
-            Flatten(input_shape=(100, 106)),
-            Dense(256, activation="relu"),
-            Dense(128, activation="relu"),
-            Dense(64, activation="relu"),
-            Dense(32, activation="relu"),
-            Dense(self.action_size, activation="linear")  
-        ])
-
-        model.compile(loss="mse", optimizer=Adam(learning_rate= self.alpha))
-        return model
+        # Create Neural Network
+        def model(img_shape):
+            input = Input(shape=img_shape)
+            # Conv Layer 1
+            x = Conv2D(filters=64, kernel_size=(5,5), strides = 2)(input)
+            x = BatchNormalization(axis = 3)(x)
+            x = ReLU()(x)
+            x = MaxPool2D(pool_size=(3, 3),strides=(2,2))(x)
+            
+            # Conv Layer 2
+            x = Conv2D(filters=128, kernel_size=(3,3), strides = 2)(x)
+            x = BatchNormalization(axis = 3)(x)
+            x = ReLU()(x)
+            x = MaxPool2D(pool_size=(3, 3),strides=(2,2))(x)
+            
+            # Conv Layer 3
+            x = Conv2D(filters=256, kernel_size=(3,3), strides = 2)(x)
+            x = BatchNormalization(axis = 3)(x)
+            x = ReLU()(x)
+            x = MaxPool2D(pool_size=(3, 3),padding="same")(x)
+            
+            # FC layer 
+            x = Flatten()(x)
+            x = Dense(512, activation="relu")(x)
+            x = Dense(128, activation="relu")(x)
+            outputs = Dense(units = self.action_size, activation="linear")(x)
+            
+            model = keras.Model(inputs=input, outputs=outputs)
+            return model
+        conv_model = model((120, 120, 1))
+        conv_model.compile(loss="mse", optimizer=Adam(learning_rate= self.alpha))
+        return conv_model
     
     def save_replay_exp(self, current_state, action,reward, next_state, terminal):
         # Save experience to replay buffer for future training
@@ -81,8 +100,11 @@ class Agent:
         max_next_state_q_values = np.amax(next_state_q_values, axis=1)
         
         for i in range(self.batch_size):
-            # Get ideal Q value by formula rj + gamma*max Q(s', a')
-            q_values[i][batch_action[i]] = batch_reward[i] if batch_terminal[i] else batch_reward[i]+self.gamma*max_next_state_q_values[i]
+            # Get ideal Q value using the formula: rj + gamma * max Q(s', a')
+            if batch_terminal[i]:
+                q_values[i][batch_action[i]] = batch_reward[i]
+            else:
+                q_values[i][batch_action[i]] = batch_reward[i] + self.gamma * max_next_state_q_values[i]
         
         # Train a main neural network
         self.main_nn.fit(batch_state, q_values, verbose = 0)
@@ -94,13 +116,14 @@ class Agent:
             return random.choice(range(self.action_size))
         else:
             # Making choice by max Q-value
-            preprocesstate = self.preprocess(state).reshape(1, 100, 106)
-            q_values = self.main_nn.predict(preprocesstate, verbose = 0)
+            preprocessed_state = self.preprocess(state).reshape(1, 120, 120, 1)
+            q_values = self.main_nn.predict(preprocessed_state, verbose = 0)
             return np.argmax(q_values[0])
     
     def log_csv(self, log_file, ep, step, rw):
         with open(log_file, mode='a', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([ep, step, rw])
-
+    def update_target_network(self):
+        self.target_nn.set_weights(self.main_nn.get_weights())
         
