@@ -4,7 +4,10 @@ from tensorflow.keras.optimizers import Adam
 import keras
 import numpy as np
 from collections import deque
+import os
+from tensorflow.keras.models import load_model
 import random
+from tensorflow.keras.losses import MeanSquaredError
 import cv2
 import pickle
 import tensorflow as tf
@@ -164,16 +167,26 @@ class Agent:
         if epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
         
-
     def save_checkpoint(self, filename="checkpoint.h5"):
-        # Save the primary model, target model, and optimizer state
-        self.main_nn.save_weights(f"primary_model_{filename}.weights.h5")
-        self.target_nn.save_weights(f"target_model_{filename}.weights.h5")
+        # Save the primary model and target model together with their optimizer state
+        primary_model_path = f"/content/drive/MyDrive/UIT/primary_model_{filename}.h5"
+        target_model_path = f"/content/drive/MyDrive/UIT/target_model_{filename}.h5"
+        
+        self.main_nn.save(primary_model_path)  # Save the entire primary model
+        self.target_nn.save(target_model_path)  # Save the entire target model
 
     def load_checkpoint(self, filename="checkpoint.h5"):
-        # Load the weights of the primary model and target model
-        self.main_nn.load_weights(f"primary_model_{filename}.weights.h5")
-        self.target_nn.load_weights(f"target_model_{filename}.weights.h5")
-        self.main_nn.trainable = True  # Set the model to training mode
+        primary_model_path = f"/content/drive/MyDrive/UIT/primary_model_{filename}"
+        target_model_path = f"/content/drive/MyDrive/UIT/target_model_{filename}"
+        
+        if os.path.exists(primary_model_path) and os.path.exists(target_model_path):
+            # Pass custom objects for loss/metrics
+            self.main_nn = load_model(primary_model_path, custom_objects={"mse": MeanSquaredError()})
+            self.target_nn = load_model(target_model_path, custom_objects={"mse": MeanSquaredError()})
+        else:
+            print("Checkpoint files not found. Skipping load.")
+        
+        self.main_nn.trainable = True
+
 
 

@@ -47,16 +47,18 @@ obs, info =env.reset()
 # Initialize param
 state_size = env.observation_space.shape
 action_size = env.action_space.n
-myAgent = Agent(state_size=state_size, action_size=action_size, batch_size=128)
+myAgent = Agent(state_size=state_size, action_size=action_size, batch_size=32)
+ep_start = 0
 if checkpoint is not None:
     myAgent.load_checkpoint(checkpoint)
+    ep_start = int(checkpoint.split("_")[-1].split(".")[0])
 total_time_step = 0
 log_file = f'training_logs/training_log_{myAgent.batch_size}_e{num_episodes}_s{num_steps}.csv'
 
 myAgent.log_csv(log_file=log_file, ep="Episode", step="ep_step",rw="ep_rewards")
 myAgent.populate_replay_buffer(env, stack_size=4)
 # Start an episode
-for ep in range(num_episodes):
+for ep in range(ep_start,num_episodes):
     print(f"Start episode: {ep}")
     ep_rewards = 0.0
     obs,_=env.reset()
@@ -99,9 +101,10 @@ for ep in range(num_episodes):
         myAgent.epsilon *=myAgent.epsilon_decay
     if ep %10 == 0:
         print(f"End episode: {ep} with episode's reward: {ep_rewards}")
+        myAgent.save_checkpoint(filename=f"checkpoint_{ep}")
 
 # Save Agent
-myAgent.save_checkpoint(filename="checkpoint.h5")
+myAgent.save_checkpoint(filename=f"checkpoint_{num_episodes}")
 
 # preprocessed_obs = myAgent.preprocess(obs)
 # print(preprocessed_obs.shape)
