@@ -169,8 +169,8 @@ class Agent:
         
     def save_checkpoint(self, filename="checkpoint.h5"):
         # Save the primary model and target model together with their optimizer state
-        primary_model_path = f"/content/drive/MyDrive/UIT/primary_model_{filename}.h5"
-        target_model_path = f"/content/drive/MyDrive/UIT/target_model_{filename}.h5"
+        primary_model_path = f"/content/drive/MyDrive/UIT/primary_model_{filename}.keras"
+        target_model_path = f"/content/drive/MyDrive/UIT/target_model_{filename}.keras"
         
         self.main_nn.save(primary_model_path)  # Save the entire primary model
         self.target_nn.save(target_model_path)  # Save the entire target model
