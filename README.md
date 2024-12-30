@@ -1,4 +1,4 @@
-# Project Name
+# Pacman Deep-Q Learning
 
 ## Description
 
