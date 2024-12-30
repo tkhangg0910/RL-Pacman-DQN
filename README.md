@@ -32,7 +32,7 @@ To use the project, follow these instructions:
     
     If you want to train, you can run the following command:
     ```bash
-    python train_pm.py -e NUMBER_OF_EPISODE_YOU_WANNA_TRAIN -s MAX_STEP_FOR_EACH_EP -l[OPTIONAL] PATH_TO_YOUR_CHECKPOINT
+    python train_pm.py -e NUMBER_OF_EPISODE_YOU_WANNA_TRAIN -s MAX_STEP_FOR_EACH_EP -l[OPTIONAL] checkpoint_[YOUR_CHECKMARK_YOU_WANNA_CONTINUE]
     ```
 
 
@@ -41,4 +41,4 @@ To use the project, follow these instructions:
 To run the tests, use the following command:
 
 ```bash
-python test_agent.py -m PATH_TO_MODEL_OR_CHECKPOINT 
+python test_agent.py -m checkpoint_[YOUR_CHECKMARK_YOU_WANNA_TEST]
